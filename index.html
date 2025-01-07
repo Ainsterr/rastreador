@@ -196,7 +196,7 @@
 
             map.fitBounds(circle.getBounds());
 
-            fetch(https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json)
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('address').innerText = data.display_name || 'Não disponível';
