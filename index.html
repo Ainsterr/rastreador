@@ -17,7 +17,62 @@
 
     <!-- Estilos Personalizados -->
     <style>
-        /* ... Seus estilos aqui ... */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .button.stop {
+            background-color: #dc3545;
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .info-box {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .info-box p {
+            margin: 5px 0;
+        }
+        .info-box span {
+            font-weight: bold;
+        }
+        #result {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -27,13 +82,17 @@
         <button id="stopButton" class="button stop" onclick="stopTracking()" style="display:none;"><i class="fas fa-stop"></i> Parar Rastreamento</button>
         <div id="result" class="loading" style="display:none;">Obtendo localização...</div>
         <div id="map"></div>
-        <div id="info-box" class="info-box" style="display:none;">
+        <div id="info-box" class="info-box">
             <p><span>Endereço:</span> <span id="address"></span></p>
             <p><span>Latitude:</span> <span id="latitude"></span></p>
             <p><span>Longitude:</span> <span id="longitude"></span></p>
             <p><span>Precisão:</span> <span id="accuracy"></span></p>
             <p><span>Última Atualização:</span> <span id="timestamp"></span></p>
+            <button id="saveLocation" class="button" onclick="saveLocation()">Salvar Localização</button>
         </div>
+        <p style="text-align:center; margin-top: 20px;">
+            <a href="visualizacao.html" class="button" target="_blank">Ver Localizações Salvas</a>
+        </p>
     </div>
 
     <script>
@@ -90,12 +149,7 @@
 
             map.fitBounds(circle.getBounds());
 
-            // Armazenando as localizações no localStorage
-            let locations = JSON.parse(localStorage.getItem('locations')) || [];
-            locations.push({ lat, lon, accuracy, timestamp: new Date(position.timestamp).toLocaleString() });
-            localStorage.setItem('locations', JSON.stringify(locations));
-
-            // Atualizando os dados na página
+            // Atualiza as informações na tela
             document.getElementById('latitude').innerText = lat.toFixed(6);
             document.getElementById('longitude').innerText = lon.toFixed(6);
             document.getElementById('accuracy').innerText = accuracy.toFixed(2) + ' metros';
@@ -126,6 +180,19 @@
                     break;
             }
             alert('Erro: ' + errorMessage);
+        }
+
+        function saveLocation() {
+            let lat = document.getElementById('latitude').innerText;
+            let lon = document.getElementById('longitude').innerText;
+            let accuracy = document.getElementById('accuracy').innerText;
+            let timestamp = document.getElementById('timestamp').innerText;
+
+            let locations = JSON.parse(localStorage.getItem('locations')) || [];
+            locations.push({ lat, lon, accuracy, timestamp });
+            localStorage.setItem('locations', JSON.stringify(locations));
+
+            alert('Localização salva com sucesso!');
         }
     </script>
 </body>
