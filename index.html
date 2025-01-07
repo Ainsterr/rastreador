@@ -88,7 +88,6 @@
             <p><span>Longitude:</span> <span id="longitude"></span></p>
             <p><span>Precisão:</span> <span id="accuracy"></span></p>
             <p><span>Última Atualização:</span> <span id="timestamp"></span></p>
-            <button id="saveLocation" class="button" onclick="saveLocation()">Salvar Localização</button>
         </div>
         <p style="text-align:center; margin-top: 20px;">
             <a href="visualizacao.html" class="button" target="_blank">Ver Localizações Salvas</a>
@@ -136,17 +135,18 @@
             var lon = position.coords.longitude;
             var accuracy = position.coords.accuracy;
 
+            // Atualiza marcador
             if (marker) {
                 marker.setLatLng([lat, lon]);
             } else {
                 marker = L.marker([lat, lon]).addTo(map);
             }
 
+            // Atualiza o círculo de precisão
             if (circle) {
                 map.removeLayer(circle);
             }
             circle = L.circle([lat, lon], {radius: accuracy}).addTo(map);
-
             map.fitBounds(circle.getBounds());
 
             // Atualiza as informações na tela
@@ -155,8 +155,29 @@
             document.getElementById('accuracy').innerText = accuracy.toFixed(2) + ' metros';
             document.getElementById('timestamp').innerText = new Date(position.timestamp).toLocaleString();
 
+            // Chama o serviço de geocodificação para pegar o endereço
+            getAddress(lat, lon);
+
             document.getElementById('info-box').style.display = 'block';
             document.getElementById('result').style.display = 'none';
+        }
+
+        function getAddress(lat, lon) {
+            var url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.address) {
+                        document.getElementById('address').innerText = `${data.address.road}, ${data.address.city}, ${data.address.state}, ${data.address.country}`;
+                    } else {
+                        document.getElementById('address').innerText = "Endereço não encontrado";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('address').innerText = "Erro ao obter o endereço";
+                    console.error('Erro ao buscar endereço:', error);
+                });
         }
 
         function showError(error) {
@@ -180,19 +201,6 @@
                     break;
             }
             alert('Erro: ' + errorMessage);
-        }
-
-        function saveLocation() {
-            let lat = document.getElementById('latitude').innerText;
-            let lon = document.getElementById('longitude').innerText;
-            let accuracy = document.getElementById('accuracy').innerText;
-            let timestamp = document.getElementById('timestamp').innerText;
-
-            let locations = JSON.parse(localStorage.getItem('locations')) || [];
-            locations.push({ lat, lon, accuracy, timestamp });
-            localStorage.setItem('locations', JSON.stringify(locations));
-
-            alert('Localização salva com sucesso!');
         }
     </script>
 </body>
