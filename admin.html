@@ -3,87 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Localizações</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Visualizar Localizações</title>
+
+    <!-- Incluir Leaflet CSS e JS para o Mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
     <style>
+        /* Estilos para o mapa e a página */
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #f4f7fa;
-            padding: 30px;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #3b9b72;
-        }
-        table {
+
+        #map {
+            height: 500px;
             width: 100%;
+        }
+
+        .info-box {
             margin-top: 20px;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #3b9b72;
-            color: white;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Painel de Localizações</h1>
-        <table id="locationTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                    <th>Precisão</th>
-                    <th>Data</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- As localizações serão preenchidas aqui -->
-            </tbody>
-        </table>
+    <div>
+        <h1>Localizações Salvas</h1>
+        <div id="map"></div>
+        <div id="info-box" class="info-box"></div>
     </div>
 
     <script>
-        // Função para carregar as localizações
-        function loadLocations() {
-            fetch('https://social-effectiveness.gl.at.ply.gg:58756/admin/localizacoes')
-                .then(response => response.json())
-                .then(locations => {
-                    const tableBody = document.getElementById('locationTable').getElementsByTagName('tbody')[0];
-                    tableBody.innerHTML = ''; // Limpar a tabela antes de adicionar os novos dados
+        var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-                    locations.forEach(location => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${location._id}</td>
-                            <td>${location.latitude}</td>
-                            <td>${location.longitude}</td>
-                            <td>${location.accuracy} m</td>
-                            <td>${new Date(location.timestamp).toLocaleString()}</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                })
-                .catch(err => console.error('Erro ao carregar localizações:', err));
+        // Recupera as localizações do localStorage
+        let locations = JSON.parse(localStorage.getItem('locations')) || [];
+
+        if (locations.length === 0) {
+            document.getElementById('info-box').innerText = 'Nenhuma localização salva.';
         }
 
-        // Carregar localizações quando a página for carregada
-        window.onload = loadLocations;
+        locations.forEach(location => {
+            L.marker([location.lat, location.lon]).addTo(map)
+                .bindPopup(`
+                    <b>Latitude:</b> ${location.lat}<br>
+                    <b>Longitude:</b> ${location.lon}<br>
+                    <b>Precisão:</b> ${location.accuracy} metros<br>
+                    <b>Data:</b> ${location.timestamp}
+                `);
+        });
     </script>
 </body>
 </html>
