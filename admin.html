@@ -10,15 +10,26 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <style>
-        /* Estilos para o mapa e a página */
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
             padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
         }
 
         #map {
@@ -26,17 +37,30 @@
             width: 100%;
         }
 
-        .info-box {
+        .location-list {
             margin-top: 20px;
-            text-align: center;
+            list-style: none;
+            padding: 0;
+        }
+
+        .location-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .location-item b {
+            color: #007bff;
         }
     </style>
 </head>
 <body>
-    <div>
+    <div class="container">
         <h1>Localizações Salvas</h1>
         <div id="map"></div>
-        <div id="info-box" class="info-box"></div>
+        <ul class="location-list" id="locationList"></ul>
     </div>
 
     <script>
@@ -45,11 +69,10 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Recupera as localizações do localStorage
         let locations = JSON.parse(localStorage.getItem('locations')) || [];
 
         if (locations.length === 0) {
-            document.getElementById('info-box').innerText = 'Nenhuma localização salva.';
+            document.getElementById('locationList').innerHTML = '<li>Nenhuma localização salva.</li>';
         }
 
         locations.forEach(location => {
@@ -57,9 +80,19 @@
                 .bindPopup(`
                     <b>Latitude:</b> ${location.lat}<br>
                     <b>Longitude:</b> ${location.lon}<br>
-                    <b>Precisão:</b> ${location.accuracy} metros<br>
+                    <b>Precisão:</b> ${location.accuracy}<br>
                     <b>Data:</b> ${location.timestamp}
                 `);
+
+            let listItem = document.createElement('li');
+            listItem.classList.add('location-item');
+            listItem.innerHTML = `
+                <b>Latitude:</b> ${location.lat}<br>
+                <b>Longitude:</b> ${location.lon}<br>
+                <b>Precisão:</b> ${location.accuracy}<br>
+                <b>Data:</b> ${location.timestamp}
+            `;
+            document.getElementById('locationList').appendChild(listItem);
         });
     </script>
 </body>
