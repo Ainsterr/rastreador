@@ -17,61 +17,112 @@
 
     <!-- Estilos Personalizados -->
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f0f2f5;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
         h1 {
-            text-align: center;
-            font-size: 1.8rem;
-            margin-bottom: 20px;
+            font-size: 36px;
+            color: #3b9b72;
+            margin-bottom: 30px;
+            font-weight: 700;
         }
         .button {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            font-size: 1rem;
-            border-radius: 4px;
+            background-color: #3b9b72;
+            color: #fff;
+            padding: 16px 40px;
+            border: none;
+            font-size: 18px;
+            border-radius: 8px;
             cursor: pointer;
-            text-decoration: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #2c7a55;
+            transform: translateY(-2px);
+        }
+        .button:active {
+            transform: translateY(1px);
         }
         .button.stop {
-            background-color: #dc3545;
+            background-color: #d9534f;
+        }
+        .button.stop:hover {
+            background-color: #c9302c;
         }
         #map {
             height: 400px;
-            width: 100%;
-            margin-top: 20px;
+            margin-top: 30px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
         }
         .info-box {
-            margin-top: 20px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: none;
+            background-color: #fafafa;
+            padding: 25px;
+            margin-top: 30px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
         }
         .info-box p {
-            margin: 5px 0;
+            margin: 10px 0;
+            font-size: 18px;
         }
-        .info-box span {
+        .info-box p span {
             font-weight: bold;
+            color: #333;
         }
-        #result {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #007bff;
+        .loading {
+            font-size: 20px;
+            color: #3b9b72;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                max-width: 100%;
+            }
+            h1 {
+                font-size: 28px;
+            }
+            .button {
+                width: calc(50% - 20px);
+                padding: 14px;
+                font-size: 16px;
+            }
+            #map {
+                height: 300px;
+            }
         }
     </style>
 </head>
@@ -82,16 +133,13 @@
         <button id="stopButton" class="button stop" onclick="stopTracking()" style="display:none;"><i class="fas fa-stop"></i> Parar Rastreamento</button>
         <div id="result" class="loading" style="display:none;">Obtendo localização...</div>
         <div id="map"></div>
-        <div id="info-box" class="info-box">
+        <div id="info-box" class="info-box" style="display:none;">
             <p><span>Endereço:</span> <span id="address"></span></p>
             <p><span>Latitude:</span> <span id="latitude"></span></p>
             <p><span>Longitude:</span> <span id="longitude"></span></p>
             <p><span>Precisão:</span> <span id="accuracy"></span></p>
             <p><span>Última Atualização:</span> <span id="timestamp"></span></p>
         </div>
-        <p style="text-align:center; margin-top: 20px;">
-            <a href="visualizacao.html" class="button" target="_blank">Ver Localizações Salvas</a>
-        </p>
     </div>
 
     <script>
@@ -101,13 +149,8 @@
         }).addTo(map);
 
         var marker;
+        var watchId;
         var circle;
-        var trackingInterval;
-        var currentLocation = {
-            lat: 0,
-            lon: 0,
-            accuracy: 0
-        };
 
         function startTracking() {
             document.getElementById('result').style.display = 'block';
@@ -115,25 +158,8 @@
             document.getElementById('stopButton').style.display = 'inline-block';
 
             if (navigator.geolocation) {
-                // Inicia o rastreamento contínuo com intervalo de 5 segundos
-                trackingInterval = setInterval(getLocation, 5000);
-                getLocation(); // Obtém a localização imediatamente
-            } else {
-                showError({ code: 1 });
-            }
-        }
-
-        function stopTracking() {
-            clearInterval(trackingInterval);
-            document.getElementById('result').style.display = 'none';
-            document.getElementById('startButton').style.display = 'inline-block';
-            document.getElementById('stopButton').style.display = 'none';
-        }
-
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(updatePosition, showError, {
-                    enableHighAccuracy: true,
+                watchId = navigator.geolocation.watchPosition(updatePosition, showError, {
+                    enableHighAccuracy: true, 
                     timeout: 10000,
                     maximumAge: 0
                 });
@@ -142,12 +168,21 @@
             }
         }
 
+        function stopTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('startButton').style.display = 'inline-block';
+            document.getElementById('stopButton').style.display = 'none';
+        }
+
         function updatePosition(position) {
             var lat = position.coords.latitude;
             var lon = position.coords.longitude;
             var accuracy = position.coords.accuracy;
 
-            // Atualiza o marcador e o círculo de precisão no mapa
             if (marker) {
                 marker.setLatLng([lat, lon]);
             } else {
@@ -157,40 +192,47 @@
             if (circle) {
                 map.removeLayer(circle);
             }
-            circle = L.circle([lat, lon], { radius: accuracy }).addTo(map);
+            circle = L.circle([lat, lon], {radius: accuracy}).addTo(map);
+
             map.fitBounds(circle.getBounds());
 
-            // Atualiza as informações no painel
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('address').innerText = data.display_name || 'Não disponível';
+                })
+                .catch(error => {
+                    document.getElementById('address').innerText = 'Erro ao obter endereço';
+                });
+
             document.getElementById('latitude').innerText = lat.toFixed(6);
             document.getElementById('longitude').innerText = lon.toFixed(6);
             document.getElementById('accuracy').innerText = accuracy.toFixed(2) + ' metros';
             document.getElementById('timestamp').innerText = new Date(position.timestamp).toLocaleString();
 
-            // Armazena a localização atual para exibir o endereço
-            currentLocation.lat = lat;
-            currentLocation.lon = lon;
-            currentLocation.accuracy = accuracy;
+            document.getElementById('info-box').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
 
-            // Chama o serviço de geocodificação para pegar o endereço
-            getAddress(lat, lon);
+            // Send location data to server
+            sendLocationToServer(lat, lon, accuracy, position.timestamp);
         }
 
-        function getAddress(lat, lon) {
-            var url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.address) {
-                        document.getElementById('address').innerText = `${data.address.road}, ${data.address.city}, ${data.address.state}, ${data.address.country}`;
-                    } else {
-                        document.getElementById('address').innerText = "Endereço não encontrado";
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('address').innerText = "Erro ao obter o endereço";
-                    console.error('Erro ao buscar endereço:', error);
-                });
+        function sendLocationToServer(lat, lon, accuracy, timestamp) {
+            fetch('/api/location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lon,
+                    accuracy: accuracy,
+                    timestamp: timestamp
+                }),
+            })
+            .then(response => response.json())
+            .then(data => console.log('Location sent to server:', data))
+            .catch((error) => console.error('Error:', error));
         }
 
         function showError(error) {
