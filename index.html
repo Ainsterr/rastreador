@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localização Atualizada</title>
+
+    <!-- Incluir Leaflet CSS e JS para o Mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Fontes do Google Fonts para uma interface mais moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome para ícones modernos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+    <!-- Estilos Personalizados -->
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        h1 {
+            font-size: 36px;
+            color: #3b9b72;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+        .button {
+            background-color: #3b9b72;
+            color: #fff;
+            padding: 16px 40px;
+            border: none;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #2c7a55;
+            transform: translateY(-2px);
+        }
+        .button:active {
+            transform: translateY(1px);
+        }
+        .button.stop {
+            background-color: #d9534f;
+        }
+        .button.stop:hover {
+            background-color: #c9302c;
+        }
+        #map {
+            height: 400px;
+            margin-top: 30px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .info-box {
+            background-color: #fafafa;
+            padding: 25px;
+            margin-top: 30px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .info-box p {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .info-box p span {
+            font-weight: bold;
+            color: #333;
+        }
+        .loading {
+            font-size: 20px;
+            color: #3b9b72;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                max-width: 100%;
+            }
+            h1 {
+                font-size: 28px;
+            }
+            .button {
+                width: calc(50% - 20px);
+                padding: 14px;
+                font-size: 16px;
+            }
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Localização Atualizada</h1>
+        <button id="startButton" class="button" onclick="startTracking()"><i class="fas fa-location-arrow"></i> Iniciar Rastreamento</button>
+        <button id="stopButton" class="button stop" onclick="stopTracking()" style="display:none;"><i class="fas fa-stop"></i> Parar Rastreamento</button>
+        <div id="result" class="loading" style="display:none;">Obtendo localização...</div>
+        <div id="map"></div>
+        <div id="info-box" class="info-box" style="display:none;">
+            <p><span>Endereço:</span> <span id="address"></span></p>
+            <p><span>Latitude:</span> <span id="latitude"></span></p>
+            <p><span>Longitude:</span> <span id="longitude"></span></p>
+            <p><span>Precisão:</span> <span id="accuracy"></span></p>
+            <p><span>Última Atualização:</span> <span id="timestamp"></span></p>
+        </div>
+    </div>
+
+    <script>
+        var map = L.map('map').setView([0, 0], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var marker;
+        var watchId;
+        var circle;
+
+        function startTracking() {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('startButton').style.display = 'none';
+            document.getElementById('stopButton').style.display = 'inline-block';
+
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(updatePosition, showError, {
+                    enableHighAccuracy: true, 
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            } else {
+                showError({ code: 1 });
+            }
+        }
+
+        function stopTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('startButton').style.display = 'inline-block';
+            document.getElementById('stopButton').style.display = 'none';
+        }
+
+        function updatePosition(position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+            var accuracy = position.coords.accuracy;
+
+            if (marker) {
+                marker.setLatLng([lat, lon]);
+            } else {
+                marker = L.marker([lat, lon]).addTo(map);
+            }
+
+            if (circle) {
+                map.removeLayer(circle);
+            }
+            circle = L.circle([lat, lon], {radius: accuracy}).addTo(map);
+
+            map.fitBounds(circle.getBounds());
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('address').innerText = data.display_name || 'Não disponível';
+                })
+                .catch(error => {
+                    document.getElementById('address').innerText = 'Erro ao obter endereço';
+                });
+
+            document.getElementById('latitude').innerText = lat.toFixed(6);
+            document.getElementById('longitude').innerText = lon.toFixed(6);
+            document.getElementById('accuracy').innerText = accuracy.toFixed(2) + ' metros';
+            document.getElementById('timestamp').innerText = new Date(position.timestamp).toLocaleString();
+
+            document.getElementById('info-box').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            // Send location data to server
+            sendLocationToServer(lat, lon, accuracy, position.timestamp);
+        }
+
+        function sendLocationToServer(lat, lon, accuracy, timestamp) {
+            fetch('/api/location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lon,
+                    accuracy: accuracy,
+                    timestamp: timestamp
+                }),
+            })
+            .then(response => response.json())
+            .then(data => console.log('Location sent to server:', data))
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function showError(error) {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('startButton').style.display = 'inline-block';
+            document.getElementById('stopButton').style.display = 'none';
+
+            let errorMessage;
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = "Usuário negou a solicitação de Geolocalização.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = "Informação de localização indisponível.";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = "A solicitação para obter a localização do usuário expirou.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMessage = "Ocorreu um erro desconhecido.";
+                    break;
+            }
+            alert('Erro: ' + errorMessage);
+        }
+    </script>
+</body>
+</html>
+
