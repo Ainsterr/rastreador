@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizar Localizações</title>
+    <title>Localizações Salvas</title>
 
-    <!-- Incluir Leaflet CSS e JS para o Mapa -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -16,7 +13,6 @@
             margin: 0;
             padding: 0;
         }
-
         .container {
             max-width: 800px;
             margin: 20px auto;
@@ -25,77 +21,57 @@
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-
         h1 {
             text-align: center;
             font-size: 1.8rem;
             margin-bottom: 20px;
         }
-
-        #map {
-            height: 500px;
-            width: 100%;
-        }
-
-        .location-list {
-            margin-top: 20px;
-            list-style: none;
-            padding: 0;
-        }
-
-        .location-item {
-            background: #f8f9fa;
+        .location-card {
+            background: #fff;
             padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
+            margin-bottom: 20px;
+            border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        .location-item b {
-            color: #007bff;
+        .location-card p {
+            margin: 5px 0;
+        }
+        .location-card span {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Localizações Salvas</h1>
-        <div id="map"></div>
-        <ul class="location-list" id="locationList"></ul>
+        <div id="locationsContainer"></div>
     </div>
 
     <script>
-        var map = L.map('map').setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        function loadLocations() {
+            var locations = JSON.parse(localStorage.getItem('locations')) || [];
+            var locationsContainer = document.getElementById('locationsContainer');
 
-        let locations = JSON.parse(localStorage.getItem('locations')) || [];
+            if (locations.length === 0) {
+                locationsContainer.innerHTML = "<p style='text-align:center;'>Nenhuma localização salva</p>";
+                return;
+            }
 
-        if (locations.length === 0) {
-            document.getElementById('locationList').innerHTML = '<li>Nenhuma localização salva.</li>';
+            locations.forEach(function(location, index) {
+                var locationCard = document.createElement('div');
+                locationCard.classList.add('location-card');
+                locationCard.innerHTML = `
+                    <p><span>Endereço:</span> ${location.address || "Não disponível"}</p>
+                    <p><span>Latitude:</span> ${location.latitude}</p>
+                    <p><span>Longitude:</span> ${location.longitude}</p>
+                    <p><span>Precisão:</span> ${location.accuracy} metros</p>
+                    <p><span>Data:</span> ${location.timestamp}</p>
+                `;
+                locationsContainer.appendChild(locationCard);
+            });
         }
 
-        locations.forEach(location => {
-            L.marker([location.lat, location.lon]).addTo(map)
-                .bindPopup(`
-                    <b>Latitude:</b> ${location.lat}<br>
-                    <b>Longitude:</b> ${location.lon}<br>
-                    <b>Precisão:</b> ${location.accuracy}<br>
-                    <b>Endereço:</b> ${location.address}<br>
-                    <b>Data:</b> ${location.timestamp}
-                `);
-
-            let listItem = document.createElement('li');
-            listItem.classList.add('location-item');
-            listItem.innerHTML = `
-                <b>Latitude:</b> ${location.lat}<br>
-                <b>Longitude:</b> ${location.lon}<br>
-                <b>Precisão:</b> ${location.accuracy}<br>
-                <b>Endereço:</b> ${location.address}<br>
-                <b>Data:</b> ${location.timestamp}
-            `;
-            document.getElementById('locationList').appendChild(listItem);
-        });
+        window.onload = loadLocations;
     </script>
 </body>
 </html>
