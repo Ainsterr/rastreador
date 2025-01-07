@@ -61,7 +61,7 @@
     <script>
         // Função para carregar as localizações
         function loadLocations() {
-            fetch('social-effectiveness.gl.at.ply.gg:58756/admin/localizacoes')
+            fetch('https://social-effectiveness.gl.at.ply.gg:58756/admin/localizacoes')
                 .then(response => response.json())
                 .then(locations => {
                     const tableBody = document.getElementById('locationTable').getElementsByTagName('tbody')[0];
