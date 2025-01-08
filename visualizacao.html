@@ -12,6 +12,7 @@
             background-color: #f0f2f5;
             margin: 0;
             padding: 0;
+            color: #333;
         }
         .container {
             max-width: 800px;
@@ -23,39 +24,86 @@
         }
         h1 {
             text-align: center;
-            font-size: 1.8rem;
+            font-size: 2rem;
             margin-bottom: 20px;
+            color: #2c3e50;
         }
         .location-card {
             background: #fff;
-            padding: 10px;
+            padding: 15px;
             margin-bottom: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .location-card:hover {
+            transform: translateY(-5px);
         }
         .location-card p {
-            margin: 5px 0;
+            margin: 8px 0;
         }
         .location-card span {
             font-weight: bold;
+            color: #3498db;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        #addLocationForm {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #addressInput {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Localizações Salvas</h1>
+        <form id="addLocationForm">
+            <input type="text" id="addressInput" placeholder="Digite o endereço (opcional)">
+            <button type="submit" class="btn">Adicionar Localização</button>
+        </form>
         <div id="locationsContainer"></div>
+        <button id="clearAllBtn" class="btn btn-danger" style="display: none;">Limpar Todas as Localizações</button>
     </div>
 
     <script>
         function loadLocations() {
             var locations = JSON.parse(localStorage.getItem('locations')) || [];
             var locationsContainer = document.getElementById('locationsContainer');
+            var clearAllBtn = document.getElementById('clearAllBtn');
+
+            locationsContainer.innerHTML = '';
 
             if (locations.length === 0) {
                 locationsContainer.innerHTML = "<p style='text-align:center;'>Nenhuma localização salva</p>";
+                clearAllBtn.style.display = 'none';
                 return;
             }
+
+            clearAllBtn.style.display = 'block';
 
             locations.forEach(function(location, index) {
                 var locationCard = document.createElement('div');
@@ -66,10 +114,56 @@
                     <p><span>Longitude:</span> ${location.longitude}</p>
                     <p><span>Precisão:</span> ${location.accuracy} metros</p>
                     <p><span>Data:</span> ${location.timestamp}</p>
+                    <button class="btn btn-danger delete-btn" data-index="${index}">Excluir</button>
                 `;
                 locationsContainer.appendChild(locationCard);
             });
+
+            // Adicionar event listeners para os botões de exclusão
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    var index = this.getAttribute('data-index');
+                    locations.splice(index, 1);
+                    localStorage.setItem('locations', JSON.stringify(locations));
+                    loadLocations();
+                });
+            });
         }
+
+        function addLocation(address) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var locations = JSON.parse(localStorage.getItem('locations')) || [];
+                    locations.push({
+                        address: address,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: new Date().toLocaleString()
+                    });
+                    localStorage.setItem('locations', JSON.stringify(locations));
+                    loadLocations();
+                }, function(error) {
+                    alert("Erro ao obter localização: " + error.message);
+                });
+            } else {
+                alert("Geolocalização não é suportada pelo seu navegador.");
+            }
+        }
+
+        document.getElementById('addLocationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var address = document.getElementById('addressInput').value;
+            addLocation(address);
+            document.getElementById('addressInput').value = '';
+        });
+
+        document.getElementById('clearAllBtn').addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja limpar todas as localizações?')) {
+                localStorage.removeItem('locations');
+                loadLocations();
+            }
+        });
 
         window.onload = loadLocations;
     </script>
