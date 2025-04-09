@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora Inteligente do Motorista</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Calculadora Inteligente do Motorista</h1>
+    <form id="form">
+      <div class="form-group">
+        <label>Tipo de Veículo:
+          <select id="veiculo">
+            <option value="carro">Carro</option>
+            <option value="moto">Moto</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Consumo (km por litro):
+          <input type="number" id="consumo" step="0.1" required />
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Preço do combustível (R$/litro):
+          <input type="number" id="preco" step="0.01" required />
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Valor abastecido (R$):
+          <input type="number" id="abastecido" step="0.01" required />
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Meta:
+          <input type="number" id="meta" step="0.01" required />
+        </label>
+        <label>
+          <select id="tipo_meta">
+            <option value="dia">Por Dia</option>
+            <option value="hora">Por Hora</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Horas de trabalho por dia:
+          <input type="number" id="horas_dia" step="0.1" required />
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Taxa da Plataforma:
+          <select id="taxa">
+            <option value="25">Uber (25%)</option>
+            <option value="19.99">99 (19,99%)</option>
+            <option value="0">Sem taxa</option>
+          </select>
+        </label>
+      </div>
+
+      <button type="button" id="btn-calcular">Calcular</button>
+      <button type="button" id="btn-pdf">Salvar como PDF</button>
+    </form>
+
+    <div id="resultado" class="resultado"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    document.getElementById("btn-calcular").addEventListener("click", function() {
+      const consumo = parseFloat(document.getElementById('consumo').value);
+      const preco = parseFloat(document.getElementById('preco').value);
+      const abastecido = parseFloat(document.getElementById('abastecido').value);
+      const meta = parseFloat(document.getElementById('meta').value);
+      const tipoMeta = document.getElementById('tipo_meta').value;
+      const horasDia = parseFloat(document.getElementById('horas_dia').value);
+      const taxa = parseFloat(document.getElementById('taxa').value);
+
+      if (isNaN(consumo) || isNaN(preco) || isNaN(abastecido) || isNaN(meta) || isNaN(horasDia)) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+      }
+
+      const litros = abastecido / preco;
+      const kmDisponivel = litros * consumo;
+      const custoPorKm = preco / consumo;
+
+      const metaDia = tipoMeta === "hora" ? meta * horasDia : meta;
+      const ganhoLiquidoPorDia = metaDia / (1 - taxa / 100);
+      const minimoPorHora = ganhoLiquidoPorDia / horasDia;
+      const minimoPorKm = ganhoLiquidoPorDia / kmDisponivel;
+
+      document.getElementById('resultado').innerHTML = `
+        <h3>Resultados:</h3>
+        Litros abastecidos: <strong>${litros.toFixed(2)} L</strong><br>
+        KM disponíveis: <strong>${kmDisponivel.toFixed(2)} km</strong><br>
+        Custo por KM: <strong>R$ ${custoPorKm.toFixed(2)}</strong><br><br>
+        Meta considerada: <strong>R$ ${metaDia.toFixed(2)} / dia</strong><br>
+        Ganho necessário (com taxa): <strong>R$ ${ganhoLiquidoPorDia.toFixed(2)}</strong><br>
+        Mínimo por hora: <strong>R$ ${minimoPorHora.toFixed(2)}</strong><br>
+        Mínimo por KM: <strong>R$ ${minimoPorKm.toFixed(2)}</strong><br>
+      `;
+    });
+
+    document.getElementById("btn-pdf").addEventListener("click", function() {
+      const resultado = document.getElementById('resultado');
+      if (!resultado.innerHTML.trim()) {
+        alert("Faça um cálculo primeiro.");
+        return;
+      }
+
+      const opt = {
+        margin:       0.5,
+        filename:     'resultado_motorista.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'cm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().from(resultado).set(opt).save();
+    });
+  </script>
+</body>
+</html>
